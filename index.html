@@ -217,6 +217,15 @@
         document.getElementById('total-paid').innerText = tp.toLocaleString() + " $";
     }
 
+    // YANGI QATOR QO'SHISH FUNKSIYASI
+    function addRow() {
+        rows.push({name: "", c3: "", c4: "", count: "", p_cash: "", p_card: ""});
+        localStorage.setItem('active_rows', JSON.stringify(rows));
+        renderTable();
+    }
+
+    function removeRow(i) { if(confirm("O'chirish?")) { rows.splice(i,1); localStorage.setItem('active_rows', JSON.stringify(rows)); renderTable(); } }
+
     function startNewRoute() {
         let name = prompt("Yangi mashrut uchun nom kiriting (Eskisi arxivga tushadi):");
         if(name) {
@@ -261,12 +270,25 @@
     function cRes() { let d = document.getElementById('c-display'); try { d.value = eval(d.value); } catch { d.value = 'Xato'; } }
     
     async function sendToTelegram() {
-        const TG_TOKEN = "8242971707:AAEZoKiITDepjY4NHdSmjx60dWxqk8_FRfc"; const TG_CHAT_ID = "5588598964";
-        let msg = `📊 HISOBOT: ${currentTitle}\n`;
-        rows.forEach(r => { let d = (parseFloat(r.c3)||0)+(parseFloat(r.c4)||0); if(d>0) msg += `👤 ${r.name}: ${d.toLocaleString()} $\n`; });
-        msg += `\n💵 QARZ: ${document.getElementById('grand-total').innerText}\n💰 TO'LANDI: ${document.getElementById('total-paid').innerText}`;
-        fetch(`https://api.telegram.org/bot${TG_TOKEN}/sendMessage?chat_id=${TG_CHAT_ID}&text=${encodeURIComponent(msg)}`);
-        alert("Telegramga yuborildi!");
+        const TG_TOKEN = "8242971707:AAEZoKiITDepjY4NHdSmjx60dWxqk8_FRfc"; 
+        const TG_CHAT_ID = "5588598964"; 
+        let msg = `📋 *HISOBOT: ${currentTitle}*\n📅 *Sana:* ${savedDate || "Yozilmagan"}\n\n`;
+        let tQ = 0, tKQ = 0, tP = 0;
+        rows.forEach(r => {
+            let q = parseFloat(r.c3)||0, kq = parseFloat(r.c4)||0, nc = parseFloat(r.p_cash)||0, kc = parseFloat(r.p_card)||0;
+            tQ += q; tKQ += kq; tP += (nc+kc);
+            if(r.name.trim() !== "") {
+                msg += `👤 *Klent:* ${r.name}\n📦 *Olgan:* ${r.count||0}\n`;
+                if(q>0) msg += `🔴 *Qarz:* ${q}$ `;
+                if(kq>0) msg += `💳 *K.Qarz:* ${kq}$ `;
+                if(nc>0) msg += `💵 *Naqt:* ${nc}$ `;
+                if(kc>0) msg += `🔵 *Karta:* ${kc}$ `;
+                msg += `\n----------------------------\n`;
+            }
+        });
+        msg += `📊 *Jami Qarz:* ${(tQ+tKQ)}$\n✅ *Jami To'lov:* ${tP}$`;
+        fetch(`https://api.telegram.org/bot${TG_TOKEN}/sendMessage?chat_id=${TG_CHAT_ID}&text=${encodeURIComponent(msg)}&parse_mode=Markdown`);
+        alert("Yuborildi!");
     }
 </script>
 </body>
