@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Smart Mashrut & Calc</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
+        body { background: #0f1015; color: white; padding-bottom: 140px; min-height: 100vh; }
+        
+        .container { width: 100%; max-width: 900px; margin: 0 auto; padding: 10px; position: relative; }
+        
+        /* HEADER */
+        .header { background: rgba(255,255,255,0.05); padding: 15px; border-radius: 12px; margin-bottom: 15px; }
+        .header-top { display: flex; justify-content: space-between; align-items: center; }
+        #page-title { font-size: 1.2rem; color: #00d2ff; cursor: pointer; border-bottom: 1px dashed; }
+
+        /* KALKULYATOR TUGMASI */
+        .calc-trigger {
+            background: linear-gradient(135deg, #00d2ff, #007bff);
+            color: white; border: none; width: 55px; height: 55px; 
+            border-radius: 18px; cursor: pointer; font-size: 24px;
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 8px 20px rgba(0, 210, 255, 0.3);
+            transition: 0.3s;
+        }
+
+        /* POPUP KALKULYATOR */
+        #calc-popup {
+            display: none; position: fixed; top: 50%; left: 50%; 
+            transform: translate(-50%, -50%); background: #1c1d25;
+            padding: 15px; border-radius: 25px; border: 1px solid #333;
+            z-index: 2000; box-shadow: 0 20px 50px rgba(0,0,0,0.9); width: 300px;
+        }
+        .calc-header { display: flex; justify-content: space-between; margin-bottom: 12px; padding: 0 5px; }
+        #c-display { 
+            width: 100%; height: 65px; background: #000; border: 1px solid #333; 
+            border-radius: 15px; color: #00d2ff; text-align: right; 
+            padding: 15px; font-size: 28px; margin-bottom: 15px; font-family: monospace;
+        }
+        .c-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+        .c-btn { height: 55px; border: none; border-radius: 15px; background: #2d2e37; color: white; cursor: pointer; font-size: 18px; font-weight: 600; }
+        .c-op { background: #3d3e47; color: #f39c12; }
+        .c-eq { background: #f39c12; color: white; }
+
+        /* JADVAL - NECHTA OLDI USTUNI BILAN */
+        .table-box { background: white; border-radius: 8px; overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; min-width: 650px; }
+        th { background: #f1f1f1; padding: 8px; border: 1px solid #ddd; font-size: 11px; color: #333; text-align: center; }
+        td { border: 1px solid #ddd; padding: 0; }
+        input { width: 100%; border: none; padding: 12px 5px; font-size: 14px; outline: none; color: #000; text-align: center; }
+        
+        /* FOOTER */
+        .fixed-footer {
+            position: fixed; bottom: 0; left: 0; width: 100%;
+            background: #16171d; border-top: 2px solid #28a745;
+            padding: 15px; display: flex; flex-direction: column; align-items: center;
+            z-index: 1000;
+        }
+        .total-amount { font-size: 32px; color: #28a745; font-weight: 800; }
+
+        /* SANA QO'YISH */
+        .date-section {
+            margin-top: 20px; padding: 12px; background: rgba(255,255,255,0.05);
+            border-radius: 12px; display: flex; align-items: center; gap: 10px;
+        }
+        .date-input-manual { background: transparent; color: #00d2ff; border: none; border-bottom: 1px solid #444; padding: 5px; outline: none; font-size: 16px; flex: 1; font-weight: bold; }
+
+        /* ARXIV */
+        .archive-item { background: rgba(255,255,255,0.05); margin-top: 10px; padding: 12px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <div class="header-top">
+            <h2 id="page-title" onclick="renameRoute()">Bektemir mashrudi</h2>
+            <button class="calc-trigger" onclick="toggleCalc()">+−</button>
+        </div>
+        <button style="background:#007bff; color:white; width:100%; padding:12px; border-radius:10px; margin-top:15px; border:none; cursor:pointer; font-weight:bold;" onclick="startNewRoute()">💾 SAHIFANI ARXIVLASH VA YANGI OCHISH</button>
+    </div>
+
+    <div class="table-box">
+        <table>
+            <thead>
+                <tr>
+                    <th style="width: 25%;">Klent</th>
+                    <th>Naqt</th>
+                    <th>Karta</th>
+                    <th>Qarz</th>
+                    <th>K.Qarz</th>
+                    <th style="background: #eef9ff; color: #007bff;">Nechta oldi</th>
+                    <th style="width: 35px;">#</th>
+                </tr>
+            </thead>
+            <tbody id="table-body"></tbody>
+        </table>
+    </div>
+    <button onclick="addRow()" style="width:100%; padding:14px; margin-top:12px; background:#28a745; color:white; border:none; border-radius:10px; cursor:pointer; font-weight:bold;">+ YANGI QATOR QO'SHISH</button>
+
+    <div class="date-section">
+        <span style="font-size: 13px; color: #888;">Bugungi sana:</span>
+        <input type="text" id="route-date" class="date-input-manual" placeholder="Masalan: 1-fevral" oninput="saveDate()">
+    </div>
+
+    <div id="archive-list" style="margin-top:20px;"></div>
+</div>
+
+<div id="calc-popup">
+    <div class="calc-header">
+        <span style="color:#00d2ff; font-weight: bold;">HISOBLAGICH</span>
+        <button onclick="toggleCalc()" style="background:none; border:none; color:#ff4757; font-size:26px; cursor:pointer;">&times;</button>
+    </div>
+    <input type="text" id="c-display" disabled>
+    <div class="c-grid">
+        <button class="c-btn c-op" onclick="cClear()">C</button>
+        <button class="c-btn c-op" onclick="cPush('/')">÷</button>
+        <button class="c-btn c-op" onclick="cPush('*')">&times;</button>
+        <button class="c-btn c-op" onclick="cBack()">⌫</button>
+        <button class="c-btn" onclick="cPush('7')">7</button>
+        <button class="c-btn" onclick="cPush('8')">8</button>
+        <button class="c-btn" onclick="cPush('9')">9</button>
+        <button class="c-btn c-op" onclick="cPush('-')">−</button>
+        <button class="c-btn" onclick="cPush('4')">4</button>
+        <button class="c-btn" onclick="cPush('5')">5</button>
+        <button class="c-btn" onclick="cPush('6')">6</button>
+        <button class="c-btn c-op" onclick="cPush('+')">+</button>
+        <button class="c-btn" onclick="cPush('1')">1</button>
+        <button class="c-btn" onclick="cPush('2')">2</button>
+        <button class="c-btn" onclick="cPush('3')">3</button>
+        <button class="c-btn c-eq" style="grid-row: span 2; height:120px" onclick="cRes()">=</button>
+        <button class="c-btn" style="grid-column: span 2;" onclick="cPush('0')">0</button>
+        <button class="c-btn" onclick="cPush('.')">.</button>
+    </div>
+</div>
+
+<div class="fixed-footer">
+    <div style="font-size:12px; color:#888; margin-bottom: 5px;">UMUMIY JAMI NATIJA</div>
+    <div class="total-amount" id="grand-total">0.00 $</div>
+</div>
+
+<script>
+    let rows = JSON.parse(localStorage.getItem('active_rows')) || [{name: "Aka uka", c1: "", c2: "", c3: "", c4: "", count: ""}];
+    let archive = JSON.parse(localStorage.getItem('mashrut_archive')) || [];
+    let currentTitle = localStorage.getItem('active_title') || "Bektemir mashrudi";
+    let savedDate = localStorage.getItem('active_date') || "";
+
+    function init() {
+        document.getElementById('page-title').innerText = currentTitle;
+        document.getElementById('route-date').value = savedDate;
+        renderTable();
+        renderArchive();
+    }
+
+    function saveDate() {
+        savedDate = document.getElementById('route-date').value;
+        localStorage.setItem('active_date', savedDate);
+    }
+
+    function renderTable() {
+        const body = document.getElementById('table-body');
+        body.innerHTML = '';
+        rows.forEach((row, index) => {
+            body.innerHTML += `
+                <tr>
+                    <td><input type="text" style="font-weight:bold; text-align:left; padding-left:10px;" value="${row.name}" oninput="updateCell(${index}, 'name', this.value)"></td>
+                    <td><input type="number" value="${row.c1}" oninput="updateCell(${index}, 'c1', this.value)"></td>
+                    <td><input type="number" value="${row.c2}" oninput="updateCell(${index}, 'c2', this.value)"></td>
+                    <td><input type="number" value="${row.c3}" oninput="updateCell(${index}, 'c3', this.value)"></td>
+                    <td><input type="number" value="${row.c4}" oninput="updateCell(${index}, 'c4', this.value)"></td>
+                    <td style="background:#f0f8ff"><input type="text" value="${row.count || ''}" oninput="updateCell(${index}, 'count', this.value)" placeholder="..."></td>
+                    <td><button onclick="removeRow(${index})" style="background:none; border:none; color:red; cursor:pointer; font-size:18px;">&times;</button></td>
+                </tr>
+            `;
+        });
+        calculateTotal();
+    }
+
+    function updateCell(i, f, v) {
+        rows[i][f] = v;
+        localStorage.setItem('active_rows', JSON.stringify(rows));
+        calculateTotal();
+    }
+
+    function addRow() {
+        rows.push({name: "", c1: "", c2: "", c3: "", c4: "", count: ""});
+        renderTable();
+    }
+
+    function removeRow(i) {
+        rows.splice(i, 1);
+        renderTable();
+        localStorage.setItem('active_rows', JSON.stringify(rows));
+    }
+
+    function calculateTotal() {
+        let total = 0;
+        rows.forEach(r => {
+            total += (parseFloat(r.c1) || 0) + (parseFloat(r.c2) || 0) + (parseFloat(r.c3) || 0) + (parseFloat(r.c4) || 0);
+        });
+        document.getElementById('grand-total').innerText = total.toLocaleString() + " $";
+    }
+
+    function startNewRoute() {
+        let destination = prompt("Mashrut qayoqqa? (Yangi sahifa nomi):");
+        if (destination) {
+            archive.push({ title: currentTitle, date: (savedDate || "Sana yo'q"), data: [...rows] });
+            localStorage.setItem('mashrut_archive', JSON.stringify(archive));
+            currentTitle = destination;
+            rows = [{name: "", c1: "", c2: "", c3: "", c4: "", count: ""}];
+            savedDate = "";
+            localStorage.setItem('active_title', currentTitle);
+            localStorage.setItem('active_rows', JSON.stringify(rows));
+            localStorage.setItem('active_date', savedDate);
+            init();
+        }
+    }
+
+    function renderArchive() {
+        const list = document.getElementById('archive-list');
+        list.innerHTML = '<h4 style="color:#888; border-bottom:1px solid #333; padding-bottom:5px; margin-top:20px;">Saqlangan Arxivlar</h4>';
+        archive.forEach((item, index) => {
+            list.innerHTML += `
+                <div class="archive-item" onclick="openArchive(${index})">
+                    <span><b>${item.title}</b> <br><small>${item.date}</small></span>
+                    <button onclick="deleteArchive(event, ${index})" style="background:#ff4757; color:white; border:none; padding:6px 12px; border-radius:8px; cursor:pointer;">O'chirish</button>
+                </div>
+            `;
+        });
+    }
+
+    function openArchive(index) {
+        if(confirm("Hozirgi sahifani arxivga saqlab, tanlangan eski sahifani ochamizmi?")) {
+            archive.push({ title: currentTitle, date: (savedDate || "Sana yo'q"), data: [...rows] });
+            const selected = archive[index];
+            currentTitle = selected.title;
+            rows = selected.data;
+            archive.splice(index, 1);
+            localStorage.setItem('active_title', currentTitle);
+            localStorage.setItem('active_rows', JSON.stringify(rows));
+            localStorage.setItem('mashrut_archive', JSON.stringify(archive));
+            init();
+        }
+    }
+
+    function deleteArchive(e, i) {
+        e.stopPropagation();
+        if(confirm("Butunlay o'chirilsinmi?")) { archive.splice(i, 1); localStorage.setItem('mashrut_archive', JSON.stringify(archive)); renderArchive(); }
+    }
+
+    function renameRoute() {
+        let n = prompt("Nomni o'zgartirish:", currentTitle);
+        if(n) { currentTitle = n; localStorage.setItem('active_title', n); init(); }
+    }
+
+    function toggleCalc() { const p = document.getElementById('calc-popup'); p.style.display = (p.style.display === 'block') ? 'none' : 'block'; }
+    const cD = document.getElementById('c-display');
+    function cPush(v) { cD.value += v; }
+    function cClear() { cD.value = ''; }
+    function cBack() { cD.value = cD.value.slice(0, -1); }
+    function cRes() { try { cD.value = eval(cD.value); } catch { cD.value = 'Error'; } }
+
+    init();
+</script>
+</body>
+</html>
