@@ -261,7 +261,7 @@
     function cRes() { let d = document.getElementById('c-display'); try { d.value = eval(d.value); } catch { d.value = 'Xato'; } }
     
     async function sendToTelegram() {
-        const TG_TOKEN = "YOUR_BOT_TOKEN"; const TG_CHAT_ID = "YOUR_CHAT_ID";
+        const TG_TOKEN = "8242971707:AAEZoKiITDepjY4NHdSmjx60dWxqk8_FRfc"; const TG_CHAT_ID = "5588598964";
         let msg = `📊 HISOBOT: ${currentTitle}\n`;
         rows.forEach(r => { let d = (parseFloat(r.c3)||0)+(parseFloat(r.c4)||0); if(d>0) msg += `👤 ${r.name}: ${d.toLocaleString()} $\n`; });
         msg += `\n💵 QARZ: ${document.getElementById('grand-total').innerText}\n💰 TO'LANDI: ${document.getElementById('total-paid').innerText}`;
